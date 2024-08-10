@@ -1,0 +1,7 @@
+artifacts
+.gitsecret/keys/random_seed
+!*.secret
+values/common.yaml
+values/server.yaml
+values/macbook.yaml
+values/ios.yaml
