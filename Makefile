@@ -4,14 +4,11 @@ MAIN = main.go
 TEMPLATE = templates/mono.conf
 COMMON = values/common.yaml
 OUTDIR = artifacts
-VALUE_FILES = values/server.yaml values/macbook.yaml values/ios.yaml
 
-.PHONY: all clean reveal
+# Targets
+.PHONY: all clean
 
-all: reveal $(OUTDIR)/server.conf $(OUTDIR)/macbook.conf $(OUTDIR)/ios.conf
-
-reveal:
-	git secret reveal $(COMMON) $(VALUE_FILES)
+all: $(OUTDIR)/server.conf $(OUTDIR)/macbook.conf $(OUTDIR)/ios.conf
 
 $(OUTDIR)/server.conf: $(MAIN) $(TEMPLATE) $(COMMON) values/server.yaml | $(OUTDIR)
 	$(GO) run $(MAIN) -template $(TEMPLATE) $(COMMON) values/server.yaml > $@
@@ -27,4 +24,3 @@ $(OUTDIR):
 
 clean:
 	rm -rf $(OUTDIR)
-	git secret hide
