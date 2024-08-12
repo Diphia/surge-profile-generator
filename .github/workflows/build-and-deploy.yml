@@ -29,13 +29,17 @@ jobs:
     - name: Build
       run: make
 
+    - name: Prepare files for deployment
+      run: |
+        mkdir -p deploy
+        cp artifacts/server.conf artifacts/ios.conf artifacts/macbook.conf deploy/
+
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./artifacts/
-        destination_dir: ${{ secrets.DEPLOY_TOKEN }}  
-        exclude_assets: '**/*'
+        publish_dir: ./deploy
+        destination_dir: ${{ secrets.DEPLOY_TOKEN }}
 
     - name: Save secret URL
       env:
