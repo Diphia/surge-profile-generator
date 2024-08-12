@@ -33,9 +33,8 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./  # Deploy the root directory
-        destination_dir: ${{ secrets.DEPLOY_TOKEN }}  # Use the token you've set in repository secrets
-        # Only include the configuration files we want to deploy
+        publish_dir: ./artifacts/
+        destination_dir: ${{ secrets.DEPLOY_TOKEN }}  
         exclude_assets: '**/*'
         include_files: 'server.conf,macbook.conf,ios.conf'
 
