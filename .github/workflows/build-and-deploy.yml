@@ -1,55 +1,37 @@
-name: Decrypt, Build, and Deploy
-
+name: Decrypt, Build, Upload
 on:
   push:
-    branches: [ main ]  
-
+    branches: [ main ]
 jobs:
-  build-and-deploy:
+  build-deploy-upload:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: '1.22'
-
     - name: Setup GPG
       run: |
         echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch --yes
         gpg --list-secret-keys --keyid-format LONG
-
     - name: Decrypt files
       env:
-        GPG_KEY_ID: "316B2F8FD491F599"  
+        GPG_KEY_ID: "316B2F8FD491F599"
       run: |
         ls values/*.yaml.gpg | xargs -I {} sh -c 'echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --pinentry-mode loopback --decrypt --recipient $GPG_KEY_ID "{}" > "$(dirname "{}")/$(basename "{}" .gpg)"'
-
     - name: Build
       run: make
-
-    - name: Prepare files for deployment
-      run: |
-        mkdir -p deploy
-        cp artifacts/server.conf artifacts/ios.conf artifacts/macbook.conf deploy/
-
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./deploy
-        destination_dir: ${{ secrets.DEPLOY_TOKEN }}
-
-    - name: Save secret URL
+    - name: Upload artifacts
       env:
-        URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ secrets.DEPLOY_TOKEN }}
+        UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
       run: |
-        echo $URL > secret_url.txt
-        echo "Your secret URL is saved in the 'secret_url.txt' artifact"
+        upload_file() {
+          local file=$1
+          echo "Uploading $file"
+          curl -X POST -H "Authorization: Bearer $UPLOAD_TOKEN" -F "file=@$file" https://artifacts.monism.cc/upload
+        }
 
-    - name: Upload secret URL as artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: secret-url
-        path: secret_url.txt
+        find artifacts/ -type f | while read file; do
+          upload_file "$file"
+        done
