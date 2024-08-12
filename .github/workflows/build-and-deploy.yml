@@ -18,10 +18,13 @@ jobs:
     - name: Setup GPG
       run: |
         echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch --yes
+        gpg --list-secret-keys --keyid-format LONG
 
     - name: Decrypt files
+      env:
+        GPG_KEY_ID: "316B2F8FD491F599"  
       run: |
-        ls values/*.yaml.gpg | xargs -I {} sh -c 'gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --decrypt "{}" > "$(dirname "{}")/$(basename "{}" .gpg)"'
+        ls values/*.yaml.gpg | xargs -I {} sh -c 'echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --pinentry-mode loopback --decrypt --recipient $GPG_KEY_ID "{}" > "$(dirname "{}")/$(basename "{}" .gpg)"'
 
     - name: Build
       run: make
