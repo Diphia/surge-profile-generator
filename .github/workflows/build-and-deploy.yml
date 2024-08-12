@@ -1,0 +1,52 @@
+name: Decrypt, Build, and Deploy
+
+on:
+  push:
+    branches: [ main ]  
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.22'
+
+    - name: Import GPG key
+      uses: crazy-max/ghaction-import-gpg@v5
+      with:
+        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+        passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+    - name: Decrypt files
+      run: |
+        ls values/*.yaml.gpg | xargs -I {} sh -c 'gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --decrypt "{}" > "$(dirname "{}")/$(basename "{}" .gpg)"'
+
+    - name: Build
+      run: make
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./  # Deploy the root directory
+        destination_dir: ${{ secrets.DEPLOY_TOKEN }}  # Use the token you've set in repository secrets
+        # Only include the configuration files we want to deploy
+        exclude_assets: '**/*'
+        include_files: 'server.conf,macbook.conf,ios.conf'
+
+    - name: Save secret URL
+      env:
+        URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ secrets.DEPLOY_TOKEN }}
+      run: |
+        echo $URL > secret_url.txt
+        echo "Your secret URL is saved in the 'secret_url.txt' artifact"
+
+    - name: Upload secret URL as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: secret-url
+        path: secret_url.txt
