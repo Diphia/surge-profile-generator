@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
-
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,12 +16,10 @@ func interfaceSlice(slice interface{}) ([]interface{}, bool) {
 	if s.Kind() != reflect.Slice {
 		return nil, false
 	}
-
 	ret := make([]interface{}, s.Len())
 	for i := 0; i < s.Len(); i++ {
 		ret[i] = s.Index(i).Interface()
 	}
-
 	return ret, true
 }
 
@@ -54,8 +51,15 @@ func mergeValues(valuesList ...map[string]interface{}) map[string]interface{} {
 						continue
 					}
 				}
+				if existingSlice, ok := existing.([]interface{}); ok {
+					if newSlice, ok := v.([]interface{}); ok {
+						// Merge slices by prepending new elements
+						result[k] = append(newSlice, existingSlice...)
+						continue
+					}
+				}
 			}
-			// For non-map types or if the key doesn't exist, simply override
+			// For non-map and non-slice types or if the key doesn't exist, simply override
 			result[k] = v
 		}
 	}
@@ -95,14 +99,12 @@ func main() {
 			fmt.Printf("Error reading values file %s: %v\n", file, err)
 			os.Exit(1)
 		}
-
 		var values map[string]interface{}
 		err = yaml.Unmarshal(valuesContent, &values)
 		if err != nil {
 			fmt.Printf("Error parsing YAML from file %s: %v\n", file, err)
 			os.Exit(1)
 		}
-
 		allValues = append(allValues, values)
 	}
 
